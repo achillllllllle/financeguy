@@ -2,4 +2,4 @@
 Personal accounting app
 # Database diagram
 ## First version
-![image](https://github.com/user-attachments/assets/5b0de13b-f50d-4109-97ab-c3f313d8320e)
+![image](https://github.com/user-attachments/assets/24445f20-c061-43ef-bf1d-2dd4648aa1a2)
