@@ -5,11 +5,6 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-credentials')
     }
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/achillllllllle/financeguy.git'
-            }
-        }
         stage('Terraform Init') {
             steps {
                 dir('infra') {  
