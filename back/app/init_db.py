@@ -1,66 +1,39 @@
 from sqlalchemy.orm import Session
 from . import models
+from sqlalchemy import select
 
-def init_general_categories(db: Session):
-    # Liste des catégories générales par défaut
+def init_general_categories(db):
+    """Initialize general categories if they don't exist"""
     general_categories = [
-        {
-            "name": "Alimentation",
-            "description": "Dépenses liées à la nourriture et aux boissons",
-            "is_general": True
-        },
-        {
-            "name": "Transport",
-            "description": "Dépenses de transport (essence, tickets, etc.)",
-            "is_general": True
-        },
-        {
-            "name": "Logement",
-            "description": "Dépenses liées au logement (loyer, charges, etc.)",
-            "is_general": True
-        },
-        {
-            "name": "Factures",
-            "description": "Factures mensuelles (électricité, eau, etc.)",
-            "is_general": True
-        },
-        {
-            "name": "Loisirs",
-            "description": "Dépenses de loisirs et divertissement",
-            "is_general": True
-        },
-        {
-            "name": "Santé",
-            "description": "Dépenses de santé et médicaments",
-            "is_general": True
-        },
-        {
-            "name": "Shopping",
-            "description": "Achats divers",
-            "is_general": True
-        },
-        {
-            "name": "Salaire",
-            "description": "Revenus salariaux",
-            "is_general": True
-        },
-        {
-            "name": "Autres revenus",
-            "description": "Autres sources de revenus",
-            "is_general": True
-        }
+        {"name": "Salaire", "description": "Revenus salariaux"},
+        {"name": "Loyer", "description": "Paiement du loyer"},
+        {"name": "Épicerie", "description": "Courses alimentaires"},
+        {"name": "Transport", "description": "Frais de transport"},
+        {"name": "Loisirs", "description": "Dépenses de loisirs"},
+        {"name": "Santé", "description": "Frais médicaux"},
+        {"name": "Éducation", "description": "Frais d'éducation"},
+        {"name": "Autres", "description": "Autres dépenses"}
     ]
 
-    # Vérifier si les catégories générales existent déjà
-    existing_categories = db.query(models.Category).filter(
-        models.Category.is_general == True
-    ).all()
+    try:
+        # Vérifier si les catégories existent déjà
+        stmt = select(models.Category).where(models.Category.is_general == True)
+        existing_categories = db.session.execute(stmt).scalars().all()
+        existing_names = {cat.name for cat in existing_categories}
 
-    if not existing_categories:
-        for category_data in general_categories:
-            db_category = models.Category(**category_data)
-            db.add(db_category)
-        db.commit()
+        # Ajouter les catégories manquantes
+        for category in general_categories:
+            if category["name"] not in existing_names:
+                new_category = models.Category(
+                    name=category["name"],
+                    description=category["description"],
+                    is_general=True
+                )
+                db.session.add(new_category)
+
+        db.session.commit()
         print("Catégories générales initialisées avec succès")
-    else:
-        print("Les catégories générales existent déjà") 
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error initializing categories: {str(e)}")
+        raise 

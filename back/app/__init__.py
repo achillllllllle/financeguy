@@ -6,36 +6,48 @@ from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
 
-# Charger les variables d'environnement
+# Load environment variables
 load_dotenv()
 
-# Initialiser les extensions
+# Initialize extensions
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
+cors = CORS()
 
 def create_app():
     app = Flask(__name__)
     
-    # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://user:password@localhost/financeguy')
+    # Configure the Flask application
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key-here')
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
     
-    # Initialiser les extensions
+    # Initialize extensions with app
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    CORS(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
     
-    # Enregistrer les blueprints
+    # Register blueprints
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
     
-    # Créer les tables de la base de données
+    # Create database tables and initialize data
     with app.app_context():
+        # Import models to ensure they are registered with SQLAlchemy
+        from . import models
+        # Create all tables
         db.create_all()
+        # Initialize categories
         from .init_db import init_general_categories
-        init_general_categories(db)
+        try:
+            init_general_categories(db)
+        except Exception as e:
+            print(f"Error initializing categories: {str(e)}")
+            # If there's an error, try to recreate the tables
+            db.drop_all()
+            db.create_all()
+            init_general_categories(db)
     
     return app 
